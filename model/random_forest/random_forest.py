@@ -47,10 +47,10 @@ def logit_classifier(dataset,full_dataset_ucdp):
 
     def process_logit_results(row):
         out_value = 0
-        if ((row["predictionRF"] > 0) and (row["logit_escalation"] > 0.5)):
+        if ((row["predictionRF"] > 0) and (row["logit_escalation"] > 0.9)):
             out_value = row["predictionRF"]
 
-        if ((row["predictionRF"] < 0) and (row["logit_deescalation"] > 0.5)):
+        if ((row["predictionRF"] < 0) and (row["logit_deescalation"] > 0.9)):
             out_value =  row["predictionRF"]
 
         return out_value
@@ -85,7 +85,7 @@ def train_period_model(train_X, train_y):
     features = train_X.columns
 
     model = RandomForestRegressor(
-        n_estimators=500,
+        n_estimators=100,
         min_samples_leaf=1,
         n_jobs=-1,
         random_state=random_state,
@@ -130,7 +130,7 @@ class RandomForest:
         sorted_idx = model.feature_importances_.argsort()
         a = list(reversed(model_features[sorted_idx]))
          #b= list(reversed(model.feature_importances_[sorted_idx]))
-        list_of_variable = a[0:30]
+        list_of_variable = a[0:100]
 
         dataset["predictionRF"] = y_pred
 

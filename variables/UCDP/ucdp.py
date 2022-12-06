@@ -14,9 +14,9 @@ class UCDP:
 
         self.dataset_cm = ged_cm.merge(skeleton_cm,how="right")
 
+
         # variables to consider
-        self.dep_var_cols = ["ged_best_sb","ged_count_sb"]
-        #self.dep_var_cols = ["ged_best_sb"]
+        self.dep_var_cols = ["ged_best_sb","ged_count_sb","ged_best_os","ged_count_os","ged_best_ns","ged_count_ns"]
         self.link_columns = ["month_id","country_id","country_name","yearmo"]
 
         def build_yearmo(row):

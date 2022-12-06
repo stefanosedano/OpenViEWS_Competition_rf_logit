@@ -90,6 +90,22 @@ for file in os.listdir(task1_dir):
 all_dataframes = pd.concat(all_dataframes, axis=0)
 
 
+def process_logit_results(row,p):
+    out_value = 0
+    if ((row["rf"] > 0) and (row["logit_escalation"] > p / 100)):
+        out_value = row["rf"]
+    if ((row["rf"] < 0) and (row["logit_deescalation"] > p / 100)):
+        out_value = row["rf"]
+    return out_value
+
+for p in range (0,100):
+
+    all_dataframes["rf_logit"] = all_dataframes.apply(process_logit_results,args=(p,), axis=1)
+    print(metrics.tadda_score(all_dataframes["Y_true"], all_dataframes["rf_logit"],1),p)
+
+all_dataframes["rf_logit"] = all_dataframes.apply(process_logit_results,args=(90,), axis=1)
+
+
 print("no_change")
 print(metrics.get_all_taddas(all_dataframes["Y_true"],np.zeros_like(all_dataframes["Y_true"])))
 
