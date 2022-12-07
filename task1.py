@@ -98,22 +98,6 @@ all_dataframes.to_csv(outputfile,index=False)
 outputfile = f"tasks/task1/task1_to_deliver.csv"
 all_dataframes[["month_id","country_id","run","rf_logit"]].to_csv(outputfile,index=False)
 
-#def process_logit_results(row,p):
-#    out_value = 0
-#    if ((row["rf"] > 0) and (row["logit_escalation"] > p / 100)):
-#        out_value = row["rf"]
-#    if ((row["rf"] < 0) and (row["logit_deescalation"] > p / 100)):
-#        out_value = row["rf"]
-#    return out_value
-
-#for p in range (0,100):
-#
-#    all_dataframes["rf_logit"] = all_dataframes.apply(process_logit_results,args=(p,), axis=1)
-#    print(metrics.tadda_score(all_dataframes["Y_true"], all_dataframes["rf_logit"],1),p)
-#
-#all_dataframes["rf_logit"] = all_dataframes.apply(process_logit_results,args=(90,), axis=1)
-
-
 print("no_change")
 print(metrics.get_all_taddas(all_dataframes["Y_true"],np.zeros_like(all_dataframes["Y_true"])))
 
