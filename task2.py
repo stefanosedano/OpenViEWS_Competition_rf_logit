@@ -4,6 +4,13 @@ import pandas as pd
 import pickle
 from variables.UCDP.ucdp import UCDP
 from model.random_forest.random_forest import RandomForest
+from metrics import metrics
+import datetime
+from datetime import date
+from dateutil.relativedelta import relativedelta
+import warnings
+warnings.filterwarnings('ignore')
+
 
 def calculate_cut_off(period,last_usable_date):
     """
@@ -42,59 +49,111 @@ def split_train_test(full_dataset_ucdp,cut_of_yearmo_period,period,test_date):
 full_dataset_ucdp = UCDP()
 
 """
-1. ‘True’ forecasts for sb conflict for each of the months October 2020 through March 2021, based on
-data up to and including August 2020.
-"""
-"""
-test yearmo == 202008, periods T2,T3,T4,T5,T6,T7
-"""
-
-last_usable_date = 202008
-steps=[2,3,4,5,6,7]
-
-list_of_datasets=[]
-
-for period in steps:
-    cut_of_yearmo_period,prediction_date = calculate_cut_off(period, last_usable_date)
-    trainX, trainY, testX, testY = split_train_test(full_dataset_ucdp,cut_of_yearmo_period,period,last_usable_date)
-
-    dataset = {
-        "trainX": trainX,
-        "trainY": trainY,
-        "testX": testX,
-        "testY": testY,
-        "period": period,
-        "cut_off": last_usable_date,
-        "prediction_date":prediction_date
-    }
-    list_of_datasets.append(dataset)
-
-for dataset in list_of_datasets:
-    period = dataset["period"]
-    prediction_date = dataset["prediction_date"]
-    outputfile = f"tasks/task1/Period_{period}_CutOff_{last_usable_date}_Prediction_{prediction_date}.csv"
-    if not os.path.exists(outputfile):
-        print(outputfile)
-        out = RandomForest(dataset,full_dataset_ucdp)
-        out.dataset["predictions"].to_csv(outputfile,index=False)
-
-
-
-
-
-
-
-"""
 2. Six sets of test forecasts for sb conflict for each of the months January 2017 through December
 2019, for six different steps forward s, based on data up to one month before the step counter
 starts. The set of forecasts for s = 1, for instance, provides forecasts for January 2017 based on
 data up to November 2016; for February 2017 based on data up to Decemmber 2016, etc. up to
 December 2019. The set of forecasts for s = 3 provides forecasts for January 2017 based on data
 up to October 2016; for February 2017 based on data up to November 2017, etc.
-
-3. A similar set of six sets of forecasts for sb conflict for each of the months January 2014 through
-December 2016, for six different steps forward s, based on data up to one month before the step
-counter starts.
 """
+
+start_forecast = 201701
+end_forecast = 201912
+
+all_forcast_dates = []
+#all date from start to end
+new_date = start_forecast
+while (new_date <= end_forecast):
+    all_forcast_dates.append(new_date)
+    new_date = datetime.datetime.strptime(str(new_date), '%Y%m').date()
+    new_date = new_date + relativedelta(months=(1))
+    new_date = int(new_date.strftime("%Y%m"))
+
+list_of_datasets=[]
+for pdate in all_forcast_dates:
+    for period in [2,3,4,5,6,7]:
+        pdate_date = datetime.datetime.strptime(str(pdate), '%Y%m').date()
+        last_usable_date = pdate_date + relativedelta(months=(-period))
+        last_usable_date = int(last_usable_date.strftime("%Y%m"))
+        cut_of_yearmo_period,prediction_date = calculate_cut_off(period, last_usable_date)
+        trainX, trainY, testX, testY = split_train_test(full_dataset_ucdp,cut_of_yearmo_period,period,last_usable_date)
+
+        dataset = {
+            "trainX": trainX,
+            "trainY": trainY,
+            "testX": testX,
+            "testY": testY,
+            "period": period,
+            "cut_off": last_usable_date,
+            "prediction_date":prediction_date
+        }
+
+
+
+        list_of_datasets.append(dataset)
+
+
+
+for dataset in list_of_datasets:
+    period = dataset["period"]
+    prediction_date = dataset["prediction_date"]
+    last_usable_date = dataset["cut_off"]
+    outputfile = f"tasks/task2/Period_{period}_CutOff_{last_usable_date}_Prediction_{prediction_date}.csv"
+    if not os.path.exists(outputfile):
+        print(outputfile)
+        out = RandomForest(dataset,full_dataset_ucdp)
+        out.dataset["predictions"].to_csv(outputfile,index=False)
+    else:
+        print("wierd")
+
+
+all_dataframes =[]
+task1_dir = "tasks/task2"
+for file in os.listdir(task1_dir):
+    if file.endswith(".csv"):
+        mydataframe = pd.read_csv(os.path.join(task1_dir, file))
+        mydataframe["run"] = file
+        all_dataframes.append(mydataframe)
+all_dataframes = pd.concat(all_dataframes, axis=0)
+
+outputfile = f"tasks/task2/task2_all.csv"
+all_dataframes.to_csv(outputfile,index=False)
+
+outputfile = f"tasks/task2/task2_to_deliver.csv"
+all_dataframes[["month_id","country_id","run","rf_logit"]].to_csv(outputfile,index=False)
+
+#def process_logit_results(row,p):
+#    out_value = 0
+#    if ((row["rf"] > 0) and (row["logit_escalation"] > p / 100)):
+#        out_value = row["rf"]
+#    if ((row["rf"] < 0) and (row["logit_deescalation"] > p / 100)):
+#        out_value = row["rf"]
+#    return out_value
+
+#for p in range (0,100):
+#
+#    all_dataframes["rf_logit"] = all_dataframes.apply(process_logit_results,args=(p,), axis=1)
+#    print(metrics.tadda_score(all_dataframes["Y_true"], all_dataframes["rf_logit"],1),p)
+#
+#all_dataframes["rf_logit"] = all_dataframes.apply(process_logit_results,args=(90,), axis=1)
+
+
+print("no_change")
+print(metrics.get_all_taddas(all_dataframes["Y_true"],np.zeros_like(all_dataframes["Y_true"])))
+
+print("rf")
+print(metrics.get_all_taddas(all_dataframes["Y_true"],all_dataframes["rf"]))
+
+print("rf_logit")
+print(metrics.get_all_taddas(all_dataframes["Y_true"],all_dataframes["rf_logit"]))
+
+print("median")
+print(metrics.get_all_taddas(all_dataframes["Y_true"],all_dataframes["median"]))
+
+
+
+
+
+
 
 

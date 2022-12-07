@@ -2,6 +2,7 @@ import pickle
 import mlflow
 import numpy as np
 
+
 from sklearn.ensemble import RandomForestRegressor
 import pandas as pd
 from statsmodels.formula.api import logit
@@ -9,70 +10,84 @@ import numpy as np
 
 
 def logit_classifier(dataset,full_dataset_ucdp):
-    from statsmodels.formula.api import logit
 
+
+    results_ready = 0
+    remove_one_var = 0
     list_of_variable = [w.replace('-', '_') for w in dataset['most_important_variables']]
-    train_X =dataset["trainX"]
-    test_X =dataset["testX"]
-    train_y =dataset["trainY"]
-    train_X.columns = [w.replace('-', '_') for w in train_X.columns]
-    test_X.columns = [w.replace('-', '_') for w in test_X.columns]
-    test_X["predictionRF"] = dataset["predictionRF"]
 
-    # select y_pred > 0
-    train_y_logit = train_y > 0
-    train_y_logit = train_y_logit.astype(int)
-    train_X["Y_bool"] = train_y_logit
-    formula_linear_regression = "Y_bool ~ " + ("+").join(list_of_variable)
-    list_of_variable_widh_dep = list_of_variable.copy()
-    list_of_variable_widh_dep.append("Y_bool")
-    current_model_logit = logit(formula_linear_regression, data=train_X[list_of_variable_widh_dep]).fit()
-    #subset test record with rf prediction > 0 ---> escalation
-
-    predictions_escalation = current_model_logit.predict(test_X[list_of_variable])
-    test_X["logit_escalation"] = predictions_escalation
-
-    # select y_pred < 0
-    train_y_logit = train_y < 0
-    train_y_logit = train_y_logit.astype(int)
-    train_X["Y_bool"] = train_y_logit
-    formula_linear_regression = "Y_bool ~ " + ("+").join(list_of_variable)
-    list_of_variable_widh_dep = list_of_variable.copy()
-    list_of_variable_widh_dep.append("Y_bool")
-    current_model_logit = logit(formula_linear_regression, data=train_X[list_of_variable_widh_dep]).fit()
-    #subset test record with rf prediction > 0 ---> escalation
-
-    predictions_deescalation = current_model_logit.predict(test_X[list_of_variable])
-    test_X["logit_deescalation"] = predictions_deescalation
-
-    def process_logit_results(row):
-        out_value = 0
-        if ((row["predictionRF"] > 0) and (row["logit_escalation"] > 0.9)):
-            out_value = row["predictionRF"]
-
-        if ((row["predictionRF"] < 0) and (row["logit_deescalation"] > 0.9)):
-            out_value =  row["predictionRF"]
-
-        return out_value
-
-    test_X["predictionRFLOGIT"] = 0.0
-    test_X["predictionRFLOGIT"] = test_X.apply(process_logit_results, axis=1)
-
-    predictions = pd.DataFrame()
-    predictions["month_id"] = test_X["month_id"]
-    predictions["country_id"] = test_X["country_id"]
-    predictions["country_name"] = test_X["country_name"]
-    predictions["yearmo"] = test_X["yearmo"]
-    predictions["logit_escalation"] = test_X["logit_escalation"]
-    predictions["logit_deescalation"] = test_X["logit_deescalation"]
-    predictions["rf"] = test_X["predictionRF"]
-    predictions["rf_logit"] = test_X["predictionRFLOGIT"]
-    predictions["rf_logit"] = test_X["predictionRFLOGIT"]
-    predictions["median"] = test_X["PAST_MEDIAN_ged_count_sb"]
-    predictions["Y_true"] = dataset["testY"]
+    while not(results_ready):
+        try:
 
 
-    dataset["predictions"] = predictions
+            train_X =dataset["trainX"]
+            test_X =dataset["testX"]
+            train_y =dataset["trainY"]
+            train_X.columns = [w.replace('-', '_') for w in train_X.columns]
+            test_X.columns = [w.replace('-', '_') for w in test_X.columns]
+            test_X["predictionRF"] = dataset["predictionRF"]
+
+            # select y_pred > 0
+            train_y_logit = train_y > 0
+            train_y_logit = train_y_logit.astype(int)
+            train_X["Y_bool"] = train_y_logit
+            formula_linear_regression = "Y_bool ~ " + ("+").join(list_of_variable)
+            list_of_variable_widh_dep = list_of_variable.copy()
+            list_of_variable_widh_dep.append("Y_bool")
+            current_model_logit = logit(formula_linear_regression, data=train_X[list_of_variable_widh_dep]).fit()
+            #subset test record with rf prediction > 0 ---> escalation
+
+            predictions_escalation = current_model_logit.predict(test_X[list_of_variable])
+            test_X["logit_escalation"] = predictions_escalation
+
+            # select y_pred < 0
+            train_y_logit = train_y < 0
+            train_y_logit = train_y_logit.astype(int)
+            train_X["Y_bool"] = train_y_logit
+            formula_linear_regression = "Y_bool ~ " + ("+").join(list_of_variable)
+            list_of_variable_widh_dep = list_of_variable.copy()
+            list_of_variable_widh_dep.append("Y_bool")
+            current_model_logit = logit(formula_linear_regression, data=train_X[list_of_variable_widh_dep]).fit()
+            #subset test record with rf prediction > 0 ---> escalation
+
+            predictions_deescalation = current_model_logit.predict(test_X[list_of_variable])
+            test_X["logit_deescalation"] = predictions_deescalation
+
+            def process_logit_results(row):
+                out_value = 0
+                if ((row["predictionRF"] > 0) and (row["logit_escalation"] > 0.9)):
+                    out_value = row["predictionRF"]
+
+                if ((row["predictionRF"] < 0) and (row["logit_deescalation"] > 0.9)):
+                    out_value =  row["predictionRF"]
+
+                return out_value
+
+            test_X["predictionRFLOGIT"] = 0.0
+            test_X["predictionRFLOGIT"] = test_X.apply(process_logit_results, axis=1)
+
+            predictions = pd.DataFrame()
+            predictions["month_id"] = test_X["month_id"]
+            predictions["country_id"] = test_X["country_id"]
+            predictions["country_name"] = test_X["country_name"]
+            predictions["yearmo"] = test_X["yearmo"]
+            predictions["logit_escalation"] = test_X["logit_escalation"]
+            predictions["logit_deescalation"] = test_X["logit_deescalation"]
+            predictions["rf"] = test_X["predictionRF"]
+            predictions["rf_logit"] = test_X["predictionRFLOGIT"]
+            predictions["rf_logit"] = test_X["predictionRFLOGIT"]
+            predictions["median"] = test_X["PAST_MEDIAN_ged_count_sb"]
+            predictions["Y_true"] = dataset["testY"]
+
+
+            dataset["predictions"] = predictions
+
+            results_ready = 1
+
+        except:
+            remove_one_var = remove_one_var + 1
+            list_of_variable = list_of_variable[:-remove_one_var]
+            pass
 
     return dataset
 

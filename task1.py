@@ -75,6 +75,7 @@ for period in steps:
 for dataset in list_of_datasets:
     period = dataset["period"]
     prediction_date = dataset["prediction_date"]
+    last_usable_date = dataset["cut_off"]
     outputfile = f"tasks/task1/Period_{period}_CutOff_{last_usable_date}_Prediction_{prediction_date}.csv"
     if not os.path.exists(outputfile):
         print(outputfile)
@@ -86,24 +87,31 @@ all_dataframes =[]
 task1_dir = "tasks/task1"
 for file in os.listdir(task1_dir):
     if file.endswith(".csv"):
-        all_dataframes.append(pd.read_csv(os.path.join(task1_dir, file)))
+        mydataframe = pd.read_csv(os.path.join(task1_dir, file))
+        mydataframe["run"] = file
+        all_dataframes.append(mydataframe)
 all_dataframes = pd.concat(all_dataframes, axis=0)
 
+outputfile = f"tasks/task1/task1_all.csv"
+all_dataframes.to_csv(outputfile,index=False)
 
-def process_logit_results(row,p):
-    out_value = 0
-    if ((row["rf"] > 0) and (row["logit_escalation"] > p / 100)):
-        out_value = row["rf"]
-    if ((row["rf"] < 0) and (row["logit_deescalation"] > p / 100)):
-        out_value = row["rf"]
-    return out_value
+outputfile = f"tasks/task1/task1_to_deliver.csv"
+all_dataframes[["month_id","country_id","run","rf_logit"]].to_csv(outputfile,index=False)
 
-for p in range (0,100):
+#def process_logit_results(row,p):
+#    out_value = 0
+#    if ((row["rf"] > 0) and (row["logit_escalation"] > p / 100)):
+#        out_value = row["rf"]
+#    if ((row["rf"] < 0) and (row["logit_deescalation"] > p / 100)):
+#        out_value = row["rf"]
+#    return out_value
 
-    all_dataframes["rf_logit"] = all_dataframes.apply(process_logit_results,args=(p,), axis=1)
-    print(metrics.tadda_score(all_dataframes["Y_true"], all_dataframes["rf_logit"],1),p)
-
-all_dataframes["rf_logit"] = all_dataframes.apply(process_logit_results,args=(90,), axis=1)
+#for p in range (0,100):
+#
+#    all_dataframes["rf_logit"] = all_dataframes.apply(process_logit_results,args=(p,), axis=1)
+#    print(metrics.tadda_score(all_dataframes["Y_true"], all_dataframes["rf_logit"],1),p)
+#
+#all_dataframes["rf_logit"] = all_dataframes.apply(process_logit_results,args=(90,), axis=1)
 
 
 print("no_change")
