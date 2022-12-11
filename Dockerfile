@@ -18,4 +18,3 @@ RUN pip install fastparquet
 
 RUN git clone https://github.com/stefanosedano/OpenViEWS_Competition_rf_logit.git
 
-WORKDIR /OpenViEWS_Competition_rf_logit
