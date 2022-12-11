@@ -92,10 +92,15 @@ for file in os.listdir(task1_dir):
         all_dataframes.append(mydataframe)
 all_dataframes = pd.concat(all_dataframes, axis=0)
 
-outputfile = f"tasks/task1/task1_all.csv"
+outputfile = f"tasks/tasks_aggregated_outputs/task1_all.csv"
 all_dataframes.to_csv(outputfile,index=False)
 
-outputfile = f"tasks/task1/task1_to_deliver.csv"
+print(np.sum(all_dataframes[["Y_true"]].values == 0))
+print(np.sum(all_dataframes[["Y_true"]].values > 0))
+print(np.sum(all_dataframes[["Y_true"]].values < 0))
+print(all_dataframes[["Y_true"]]["Y_true"].count())
+
+outputfile = f"tasks/tasks_aggregated_outputs/task1_to_deliver.csv"
 all_dataframes[["month_id","country_id","run","rf_logit"]].to_csv(outputfile,index=False)
 
 print("no_change")

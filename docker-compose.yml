@@ -1,0 +1,14 @@
+version: '3.7'
+
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - "80:80"
+    #volumes:
+    #  - ../CODE:/CODE
+    command:
+      - sh
+      - -c
+      - tail -f /dev/null
